@@ -10,14 +10,25 @@
     <div id="app">
         <h1>Dog of the day</h1>
         <p>Dog name: George Washington</p>
-        <img src="dogImg"/>
+        <img src="dogImg" v-if="dogImg"/>
         <hr>
         <button @click="newDog">Get another dog after ten clicks</button>
     </div>
     <script nonce="">
         const { createApp, ref, onMounted} = vue;
         createApp({
+            setup(){
+                const dogImg = ref();
 
+                const newDog = async () => {
+                    const res = await fetch('https://dog.ceo/api/breeds/image/random');
+                    const data = await res.json();
+                    dogImg.value = data.message;
+                };
+
+            onMounted(newDog);
+            return {dogImg, newDog};
+            }
         }).mount('#app');
     </script>
 </body>
