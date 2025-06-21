@@ -3,6 +3,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var mysql = require('mysql2/promise');
+const { useSyncExternalStore } = require('react');
 
 var app = express();
 
@@ -152,7 +153,7 @@ app.get('/api/dogs', async (req, res) => {
 
 app.get('/api/walkrequests/open', async (req, res) => {
   try {
-    const [walkReqs] = await db.execute('SELECT * from WalkRequests');
+    const [walkReqs] = await db.execute('SELECT request_id, Dogs.name as dog_name, requested_time, duration_minutes, location, Users.username as owner_username from WalkRequests join Dogs on WalkRequests.dog_id = Dogs.dog_id join Users on Dogs.owner_id = Users.user_id');
     res.json(walkReqs);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch open walk requests' });
@@ -161,10 +162,10 @@ app.get('/api/walkrequests/open', async (req, res) => {
 
 app.get('/api/walkers/summary', async (req, res) => {
   try {
-    const [walkers] = await db.execute('SELECT d.name as dog_name FROM Dogs');
+    const [walkers] = await db.execute(`SELECT Users.username as walker_username FROM Users join WalkRatings on Users.user_id = WalkRatings.walker_id join WalkRequests on WalkRequests.request_id = WalkRatings.request_id where Users.role = 'walker' group by Users.user_id`);
     res.json(walkers);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch dogs' });
+    res.status(500).json({ error: 'Failed to fetch walkers' });
   }
 });
 
