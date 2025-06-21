@@ -153,21 +153,22 @@ app.get('/api/dogs', async (req, res) => {
 
 app.get('/api/walkrequests/open', async (req, res) => {
   try {
-    const [walkReqs] = await db.execute('SELECT request_id, Dogs.name as dog_name, requested_time, duration_minutes, location, Users.username as owner_username from WalkRequests join Dogs on WalkRequests.dog_id = Dogs.dog_id join Users on Dogs.owner_id = Users.user_id');
+    const [walkReqs] = await db.execute('select request_id, Dogs.name as dog_name, requested_time, duration_minutes, location, Users.username as owner_username from WalkRequests join Dogs on WalkRequests.dog_id = Dogs.dog_id join Users on Dogs.owner_id = Users.user_id');
     res.json(walkReqs);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch open walk requests' });
   }
 });
 
+// Hope I did this right testing was a bit of an asshole
 app.get('/api/walkers/summary', async (req, res) => {
   try {
-    const [walkers] = await db.execute(`SELECT Users.username as walker_username FROM Users left join WalkRatings on Users.user_id = WalkRatings.walker_id left join WalkRequests on WalkRequests.request_id = WalkRatings.request_id where Users.role = 'walker' group by Users.user_id`);
+    const [walkers] = await db.execute(`select Users.username as walker_username, count(WalkRatings.rating_id) as total_ratings, round(avg(WalkRatings.rating), 1) as average_rating, count(WalkRequests.request_id) as completed_walks from Users left join WalkRatings on Users.user_id = WalkRatings.walker_id left join WalkRequests on WalkRequests.request_id = WalkRatings.request_id where Users.role = 'walker' group by Users.user_id`);
     res.json(walkers);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch walkers' });
   }
-});
+}); 
 
 app.use(express.static(path.join(__dirname, 'public')));
 
