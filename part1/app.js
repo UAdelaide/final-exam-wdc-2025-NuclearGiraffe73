@@ -162,7 +162,7 @@ app.get('/api/walkrequests/open', async (req, res) => {
 
 app.get('/api/walkers/summary', async (req, res) => {
   try {
-    const [walkers] = await db.execute(`SELECT Users.username as walker_username FROM Users join WalkRatings on Users.user_id = WalkRatings.walker_id join WalkRequests on WalkRequests.request_id = WalkRatings.request_id where Users.role = 'walker' group by Users.user_id`);
+    const [walkers] = await db.execute(`SELECT Users.username as walker_username FROM Users left join WalkRatings on Users.user_id = WalkRatings.walker_id left join WalkRequests on WalkRequests.request_id = WalkRatings.request_id where Users.role = 'walker' group by Users.user_id`);
     res.json(walkers);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch walkers' });
