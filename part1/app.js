@@ -170,6 +170,10 @@ app.get('/api/walkers/summary', async (req, res) => {
   }
 }); 
 
+app.get('/index', async (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+}); 
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 module.exports = app;

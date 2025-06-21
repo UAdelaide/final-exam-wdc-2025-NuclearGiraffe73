@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Dog of the day</title>
+    <!-- this grabs vue3 from the internet -->
+    <script nonce src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+</head>
+<body>
+    <div id="app">
+        <h1>Dog of the day</h1>
+        <p>Dog name: George Washington</p>
+        <img src="dogImg"/>
+        <hr>
+        <button @click="newDog">Get another dog after ten clicks</button>
+    </div>
+    <script nonce="">
+        const { createApp, ref, onMounted} = vue;
+        createApp({
+
+        }).mount('#app');
+    </script>
+</body>
+</html>
