@@ -1,17 +1,17 @@
 {
-  "dependencies": {
-    "express": "^5.1.0",
-    "pg": "^8.16.2"
-  },
-  "name": "part1",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "app",
+  "version": "0.0.0",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ./bin/www"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {},
-  "description": ""
+  "dependencies": {
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "express": "^4.21.2",
+    "http-errors": "~1.6.3",
+    "jade": "^0.29.0",
+    "morgan": "~1.9.1",
+    "mysql2": "^3.14.1"
+  }
 }

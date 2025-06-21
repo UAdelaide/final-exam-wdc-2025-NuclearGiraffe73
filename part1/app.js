@@ -19,11 +19,11 @@ let db;
     const connection = await mysql.createConnection({
       host: 'localhost',
       user: 'root',
-      password: '' // Set your MySQL root password
+      password: ''
     });
 
     // Create the database if it doesn't exist
-    await connection.query('CREATE DATABASE IF NOT EXISTS testdb');
+    await connection.query('CREATE DATABASE IF NOT EXISTS DogWalkService');
     await connection.end();
 
     // Now connect to the created database
@@ -31,26 +31,108 @@ let db;
       host: 'localhost',
       user: 'root',
       password: '',
-      database: 'testdb'
+      database: 'DogWalkService'
     });
 
-    // Create a table if it doesn't exist
+    // Creates tables if they don't exist
     await db.execute(`
-      CREATE TABLE IF NOT EXISTS books (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        title VARCHAR(255),
-        author VARCHAR(255)
+      CREATE TABLE IF NOT EXISTS Users (
+        user_id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        role ENUM('owner', 'walker') NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // Insert data if table is empty
-    const [rows] = await db.execute('SELECT COUNT(*) AS count FROM books');
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS Dogs (
+        dog_id INT AUTO_INCREMENT PRIMARY KEY,
+        owner_id INT NOT NULL,
+        name VARCHAR(50) NOT NULL,
+        size ENUM('small', 'medium', 'large') NOT NULL,
+        FOREIGN KEY (owner_id) REFERENCES Users(user_id)
+      )
+    `);
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS WalkRequests (
+        application_id INT AUTO_INCREMENT PRIMARY KEY,
+        request_id INT NOT NULL,
+        walker_id INT NOT NULL,
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
+        FOREIGN KEY (request_id) REFERENCES WalkRequests(request_id),
+        FOREIGN KEY (walker_id) REFERENCES Users(user_id),
+        CONSTRAINT unique_application UNIQUE (request_id, walker_id)
+      )
+    `);
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS WalkApplications (
+        application_id INT AUTO_INCREMENT PRIMARY KEY,
+        request_id INT NOT NULL,
+        walker_id INT NOT NULL,
+        applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        status ENUM('pending', 'accepted', 'rejected') DEFAULT 'pending',
+        FOREIGN KEY (request_id) REFERENCES WalkRequests(request_id),
+        FOREIGN KEY (walker_id) REFERENCES Users(user_id),
+        CONSTRAINT unique_application UNIQUE (request_id, walker_id)
+      )
+    `);
+
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS WalkRatings (
+        rating_id INT AUTO_INCREMENT PRIMARY KEY,
+        request_id INT NOT NULL,
+        walker_id INT NOT NULL,
+        owner_id INT NOT NULL,
+        rating INT CHECK (rating BETWEEN 1 AND 5),
+        comments TEXT,
+        rated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (request_id) REFERENCES WalkRequests(request_id),
+        FOREIGN KEY (walker_id) REFERENCES Users(user_id),
+        FOREIGN KEY (owner_id) REFERENCES Users(user_id),
+        CONSTRAINT unique_rating_per_walk UNIQUE (request_id)
+      )
+    `);
+
+    // Insert data
+    const [rows] = await db.execute('SELECT COUNT(*) AS count FROM Users');
     if (rows[0].count === 0) {
       await db.execute(`
-        INSERT INTO books (title, author) VALUES
-        ('1984', 'George Orwell'),
-        ('To Kill a Mockingbird', 'Harper Lee'),
-        ('Brave New World', 'Aldous Huxley')
+        insert into Users (username, email, password_hash, role) values ('alice123', 'alice@example.com', 'hashed123', 'owner'), ('bobwalker', 'bob@example.com', 'hashed456', 'walker'), ('carol123', 'carol@example.com', 'hashed789', 'owner'), ('kobi123', 'kobi@example.com', 'hashed101112', 'owner'), ('selina123', 'selina@example.com', 'hashed131415', 'walker')
+      `);
+      await db.execute(`
+        insert into Dogs (owner_id, name, size) values ((select user_id from Users where username ='alice123'), 'Max', 'medium');
+      `);
+      await db.execute(`
+        insert into Dogs (owner_id, name, size) values ((select user_id from Users where username ='carol123'), 'Bella', 'small');
+      `);
+      await db.execute(`
+        insert into Dogs (owner_id, name, size) values ((select user_id from Users where username ='kobi123'), 'Ruby', 'small');
+      `);
+      await db.execute(`
+        insert into Dogs (owner_id, name, size) values ((select user_id from Users where username ='kobi123'), 'Hunter', 'large');
+      `);
+      await db.execute(`
+        insert into Dogs (owner_id, name, size) values ((select user_id from Users where username ='alice123'), 'Jorpda', 'large');
+      `);
+      await db.execute(`
+        insert into WalkRequests (dog_id, requested_time, duration_minutes, location, status) values ((select dog_id from Dogs where name = 'Max' and owner_id = (select user_id from Users where username = 'alice123')), ' 2025-06-10 08:00:00', '30', 'Parklands', 'open');
+      `);
+      await db.execute(`
+        insert into WalkRequests (dog_id, requested_time, duration_minutes, location, status) values ((select dog_id from Dogs where name = 'Bella' and owner_id = (select user_id from Users where username = 'carol123')), ' 2025-06-10 09:30:00', '45', 'Beachside Ave', 'accepted');
+      `);
+      await db.execute(`
+        insert into WalkRequests (dog_id, requested_time, duration_minutes, location, status) values ((select dog_id from Dogs where name = 'Ruby' and owner_id = (select user_id from Users where username = 'kobi123')), ' 2025-06-10 18:00:00', '100', 'Hyrule', 'open');
+      `);
+      await db.execute(`
+        insert into WalkRequests (dog_id, requested_time, duration_minutes, location, status) values ((select dog_id from Dogs where name = 'Hunter' and owner_id = (select user_id from Users where username = 'kobi123')), ' 2025-06-10 20:00:00', '60', 'Torna', 'open');
+      `);
+      await db.execute(`
+        insert into WalkRequests (dog_id, requested_time, duration_minutes, location, status) values ((select dog_id from Dogs where name = 'Jorpda' and owner_id = (select user_id from Users where username = 'alice123')), ' 2025-06-10 23:30:00', '30', 'Pelican Town', 'accepted');
       `);
     }
   } catch (err) {
@@ -58,13 +140,31 @@ let db;
   }
 })();
 
-// Route to return books as JSON
-app.get('/', async (req, res) => {
+// added the specific labels that were used in the examples
+app.get('/api/dogs', async (req, res) => {
   try {
-    const [books] = await db.execute('SELECT * FROM books');
-    res.json(books);
+    const [dogs] = await db.execute('select name as dog_name, size, Users.username as owner_username from Dogs join Users on Dogs.owner_id = Users.user_id');
+    res.json(dogs);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch books' });
+    res.status(500).json({ error: 'Failed to fetch dogs' });
+  }
+});
+
+app.get('/api/walkrequests/open', async (req, res) => {
+  try {
+    const [walkReqs] = await db.execute('SELECT * from WalkRequests');
+    res.json(walkReqs);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch open walk requests' });
+  }
+});
+
+app.get('/api/walkers/summary', async (req, res) => {
+  try {
+    const [walkers] = await db.execute('SELECT d.name as dog_name FROM Dogs');
+    res.json(walkers);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch dogs' });
   }
 });
 
